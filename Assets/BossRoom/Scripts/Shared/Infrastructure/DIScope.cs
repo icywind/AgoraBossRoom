@@ -10,7 +10,7 @@ namespace BossRoom.Infrastructure
 	{
 	}
 
-	public class NoInstanceToInjectException : Exception
+    public class NoInstanceToInjectException : Exception
 	{
 		public NoInstanceToInjectException( string message ) : base( message )
 		{
@@ -98,6 +98,9 @@ namespace BossRoom.Infrastructure
         private readonly Dictionary<Type, object> m_TypesToInstances = new Dictionary<Type, object>();
 
         private bool m_ScopeConstructionComplete = false;
+
+        private DisposableGroup m_DisposableGroup = new DisposableGroup();
+
         public DIScope(DIScope parent = null)
         {
             m_Parent = parent;
@@ -112,6 +115,7 @@ namespace BossRoom.Infrastructure
         public void Dispose()
         {
             m_TypesToInstances.Clear();
+            m_DisposableGroup.Dispose();
         }
 
         private void EnsureScopeIsNotFinalized()
@@ -134,10 +138,11 @@ namespace BossRoom.Infrastructure
         }
 
         public void BindAsSingle<TInterface, TImplementation>()
-            where TImplementation : class, TInterface,  new()
+            where TImplementation : class, TInterface, IDisposable, new()
             where TInterface : class
         {
             var instance = new TImplementation();
+            m_DisposableGroup.Add(instance);
             BindInstanceAsSingle<TInterface>(instance);
         }
 
