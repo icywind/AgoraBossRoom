@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace BossRoom.Infrastructure
+namespace BossRoom.Scripts.Shared.Infrastructure
 {
     public class DisposableGroup : IDisposable
     {

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
 
-namespace BossRoom.Infrastructure
+namespace BossRoom.Scripts.Shared.Infrastructure
 {
     public interface IPublisher<T>
     {
@@ -13,16 +13,20 @@ namespace BossRoom.Infrastructure
     {
         IDisposable Subscribe(Action<T> handler);
     }
-    
+
     public class MessageChannel<T> : IDisposable, IPublisher<T>, ISubscriber<T>
     {
-        private readonly List<Action<T>> m_MessageHandlers = new List<Action<T>>();
-
-        private readonly Dictionary<Subscription, int> m_HandlerIndices = new Dictionary<Subscription, int>();
-
+        readonly Queue<Action> m_PendingHandlers = new Queue<Action>();
+        readonly List<Action<T>> m_MessageHandlers = new List<Action<T>>();
         bool m_IsDisposed;
+
         public void Publish(T message)
         {
+            while (m_PendingHandlers.Count > 0)
+            {
+                m_PendingHandlers.Dequeue()?.Invoke();
+            }
+
             foreach (var messageHandler in m_MessageHandlers)
             {
                 messageHandler?.Invoke(message);
@@ -32,9 +36,25 @@ namespace BossRoom.Infrastructure
         public IDisposable Subscribe(Action<T> handler)
         {
             Assert.IsTrue(!m_MessageHandlers.Contains(handler), $"Attempting to subscribe with the same handler more than once");
-            m_MessageHandlers.Add(handler);
+            m_PendingHandlers.Enqueue(() => { DoSubscribe(handler); });
             var subscription = new Subscription(this, handler);
             return subscription;
+
+            void DoSubscribe(Action<T> _h)
+            {
+                if (_h != null && !m_MessageHandlers.Contains(_h))
+                    m_MessageHandlers.Add(_h);
+            }
+        }
+
+        private void Unsubscribe(Action<T> handler)
+        {
+            m_PendingHandlers.Enqueue(() => { DoUnsubscribe(handler); });
+
+            void DoUnsubscribe(Action<T> _h)
+            {
+                m_MessageHandlers.Remove(_h);
+            }
         }
 
         public void Dispose()
@@ -43,6 +63,7 @@ namespace BossRoom.Infrastructure
             {
                 m_IsDisposed = true;
                 m_MessageHandlers.Clear();
+                m_PendingHandlers.Clear();
             }
         }
 
@@ -66,7 +87,7 @@ namespace BossRoom.Infrastructure
 
                     if (!m_MessageChannel.m_IsDisposed)
                     {
-                        m_MessageChannel.m_MessageHandlers.Remove(m_Handler);
+                        m_MessageChannel.Unsubscribe(m_Handler);
                     }
 
                     m_Handler = null;

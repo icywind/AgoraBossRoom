@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine.Assertions;
 
-namespace BossRoom.Infrastructure
+namespace BossRoom.Scripts.Shared.Infrastructure
 {
-    [AttributeUsage( AttributeTargets.Method )]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor)]
 	public sealed class Inject : Attribute
 	{
 	}
