@@ -303,6 +303,16 @@ namespace BossRoom.Scripts.Shared.Infrastructure
             }
         }
 
+        public void Inject(GameObject go)
+        {
+            var components = go.GetComponentsInChildren<Component>();
+
+            foreach (var component in components)
+            {
+                Inject(component);
+            }
+        }
+
         private object[] GetResolvedInjectionMethodParameters(MethodBase injectionMethod)
         {
             var parameters = CachedReflectionUtility.GetMethodParameters(injectionMethod);
