@@ -160,7 +160,7 @@ namespace BossRoom.Scripts.Shared.Infrastructure
         public DIScope(DIScope parent = null)
         {
             m_Parent = parent;
-            BindInstanceAsSingle<IInstanceResolver>( this );
+            BindInstanceAsSingle<IInstanceResolver, DIScope>( this );
         }
 
         ~DIScope()
