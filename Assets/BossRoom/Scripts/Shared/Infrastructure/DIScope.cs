@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace BossRoom.Scripts.Shared.Infrastructure
 {
@@ -18,13 +17,20 @@ namespace BossRoom.Scripts.Shared.Infrastructure
 		}
 	}
 
+    public class ScopeNotFinalizedException : Exception
+    {
+        public ScopeNotFinalizedException( string message ) : base( message )
+        {
+        }
+    }
+
+
     public interface IInstanceResolver
     {
-        public T Resolve<T>()
+        T Resolve<T>()
             where T : class;
 
-        public void Inject<T>(T obj)
-            where T : class;
+        void Inject(object obj);
     }
 
 	public sealed class DIScope : IInstanceResolver, IDisposable
@@ -54,7 +60,7 @@ namespace BossRoom.Scripts.Shared.Infrastructure
 
                 bool foundConstructorInjector = false;
 
-                var constructors = type.GetConstructors(BindingFlags.Default);
+                var constructors = type.GetConstructors();
                 foreach (var constructorInfo in constructors)
                 {
                     bool foundInjectionSite = constructorInfo.IsDefined(k_InjectAttributeType);
@@ -128,6 +134,21 @@ namespace BossRoom.Scripts.Shared.Infrastructure
             }
         }
 
+        private static DIScope m_rootScope;
+
+        public static DIScope RootScope
+        {
+            get
+            {
+                if (m_rootScope == null)
+                {
+                    m_rootScope = new DIScope(null);
+                }
+
+                return m_rootScope;
+            }
+        }
+
         private readonly DIScope m_Parent;
         private readonly Dictionary<Type, LazyBindDescriptor> m_LazyBindDescriptors = new Dictionary<Type, LazyBindDescriptor>();
         private readonly Dictionary<Type, object> m_TypesToInstances = new Dictionary<Type, object>();
@@ -195,6 +216,12 @@ namespace BossRoom.Scripts.Shared.Infrastructure
         private void LazyBind(Type type, params Type[] typeAliases)
         {
             var descriptor = new LazyBindDescriptor(type, typeAliases);
+
+            foreach (var typeAlias in typeAliases)
+            {
+                m_LazyBindDescriptors[typeAlias] = descriptor;
+            }
+
             m_LazyBindDescriptors[type] = descriptor;
         }
 
@@ -237,8 +264,11 @@ namespace BossRoom.Scripts.Shared.Infrastructure
         public T Resolve<T>()
             where T : class
         {
-            FinalizeScopeConstruction();
-
+            if (!m_ScopeConstructionComplete)
+            {
+                throw new ScopeNotFinalizedException(
+                    $"Trying to Resolve type {typeof(T)}, but the DISCope is not yet finalized! You should call FinalizeScopeConstruction before any of the Resolve calls.");
+            }
             //if we have this type as lazy-bound instance - we are going to instantiate it now
             if (m_LazyBindDescriptors.TryGetValue(typeof(T), out var lazyBindDescriptor))
             {
@@ -271,20 +301,19 @@ namespace BossRoom.Scripts.Shared.Infrastructure
                 return;
             }
 
+            m_ScopeConstructionComplete = true;
+
             var uniqueObjects = new HashSet<object>(m_TypesToInstances.Values);
 
             foreach (var objectToInject in uniqueObjects)
             {
                 Inject(objectToInject);
             }
-
-            m_ScopeConstructionComplete = true;
         }
 
-        public void Inject<T>( T obj )
-            where T : class
-		{
-            if(CachedReflectionUtility.TryGetInjectableMethod(typeof(T), out var injectionMethod))
+        public void Inject( object obj )
+        {
+            if(CachedReflectionUtility.TryGetInjectableMethod(obj.GetType(), out var injectionMethod))
             {
                 var parameters = CachedReflectionUtility.GetMethodParameters(injectionMethod);
 
