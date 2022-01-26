@@ -58,8 +58,6 @@ namespace BossRoom.Scripts.Shared.Infrastructure
                     return;
                 }
 
-                bool foundConstructorInjector = false;
-
                 var constructors = type.GetConstructors();
                 foreach (var constructorInfo in constructors)
                 {
@@ -69,27 +67,24 @@ namespace BossRoom.Scripts.Shared.Infrastructure
                         k_CachedInjectableConstructors[type] = constructorInfo;
                         var methodParameters = constructorInfo.GetParameters();
                         k_CachedMethodParameters[constructorInfo] = methodParameters;
-                        foundConstructorInjector = true;
                         break;
                     }
                 }
 
-                if (!foundConstructorInjector)
-                {
-                    var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-                    foreach (var methodInfo in methods)
+                foreach (var methodInfo in methods)
+                {
+                    bool foundInjectionSite = methodInfo.IsDefined(k_InjectAttributeType);
+                    if (foundInjectionSite)
                     {
-                        bool foundInjectionSite = methodInfo.IsDefined(k_InjectAttributeType);
-                        if (foundInjectionSite)
-                        {
-                            k_CachedInjectableMethods[type] = methodInfo;
-                            var methodParameters = methodInfo.GetParameters();
-                            k_CachedMethodParameters[methodInfo] = methodParameters;
-                            break;
-                        }
+                        k_CachedInjectableMethods[type] = methodInfo;
+                        var methodParameters = methodInfo.GetParameters();
+                        k_CachedMethodParameters[methodInfo] = methodParameters;
+                        break;
                     }
                 }
+
 
                 k_ProcessedTypes.Add(type);
 
@@ -236,6 +231,7 @@ namespace BossRoom.Scripts.Shared.Infrastructure
             else
             {
                 instance = Activator.CreateInstance(descriptor.Type);
+                Inject(instance);
             }
 
             AddToDisposableGroupIfDisposable(instance);
