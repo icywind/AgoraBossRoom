@@ -33,6 +33,7 @@ namespace Unity.Multiplayer.Samples.BossRoom
         float m_LastPingTime;
         Text m_TextStat;
         Text m_TextHostType;
+        Text m_ChannelInfo ;
 
         // When receiving pong client RPCs, we need to know when the initiating ping sent it so we can calculate its individual RTT
         int m_CurrentRTTPingId;
@@ -63,12 +64,15 @@ namespace Unity.Multiplayer.Samples.BossRoom
         // Creating a UI text object and add it to NetworkOverlay canvas
         void CreateNetworkStatsText()
         {
+            Debug.LogWarning("CreateNetworkStatsText");
             Assert.IsNotNull(Editor.NetworkOverlay.Instance,
                 "No NetworkOverlay object part of scene. Add NetworkOverlay prefab to bootstrap scene!");
 
             string hostType = IsHost ? "Host" : IsClient ? "Client" : "Unknown";
+            string channelInfo = GameNetPortal.Instance.ChannelInfo;
             InitializeTextLine($"Type: {hostType}", out m_TextHostType);
             InitializeTextLine("No Stat", out m_TextStat);
+            InitializeTextLine("ChannelInfo:" + channelInfo, out m_ChannelInfo);
         }
 
         private void InitializeTextLine(string defaultText, out Text textComponent)
@@ -159,6 +163,10 @@ namespace Unity.Multiplayer.Samples.BossRoom
             if (m_TextHostType != null)
             {
                 Destroy(m_TextHostType.gameObject);
+            }
+            if (m_ChannelInfo != null)
+            {
+                Destroy(m_ChannelInfo.gameObject);
             }
         }
     }

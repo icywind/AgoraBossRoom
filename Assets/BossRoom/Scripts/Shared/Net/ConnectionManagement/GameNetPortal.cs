@@ -86,6 +86,8 @@ namespace Unity.Multiplayer.Samples.BossRoom
         private ClientGameNetPortal m_ClientPortal;
         private ServerGameNetPortal m_ServerPortal;
 
+        public string ChannelInfo { get; set; }
+
         private void Awake()
         {
             Debug.Assert(Instance == null);
@@ -165,6 +167,8 @@ namespace Unity.Multiplayer.Samples.BossRoom
             var chosenTransport = NetworkManager.Singleton.gameObject.GetComponent<TransportPicker>().IpHostTransport;
             NetworkManager.Singleton.NetworkConfig.NetworkTransport = chosenTransport;
 
+            ChannelInfo = $"{ipaddress}:{port}";
+
             // Note: In most cases, this switch case shouldn't be necessary. It becomes necessary when having to deal with multiple transports like this
             // sample does, since current Transport API doesn't expose these fields.
             switch (chosenTransport)
@@ -187,6 +191,9 @@ namespace Unity.Multiplayer.Samples.BossRoom
             var chosenTransport = NetworkManager.Singleton.gameObject.GetComponent<TransportPicker>().RelayTransport;
             NetworkManager.Singleton.NetworkConfig.NetworkTransport = chosenTransport;
 
+            // Actually, this will be set by RoomNameBox after getting the region code too
+            // ChannelInfo = roomName;
+
             switch (chosenTransport)
             {
                 case PhotonRealtimeTransport photonRealtimeTransport:
@@ -206,6 +213,8 @@ namespace Unity.Multiplayer.Samples.BossRoom
         {
             var chosenTransport = NetworkManager.Singleton.gameObject.GetComponent<TransportPicker>().UnityRelayTransport;
             NetworkManager.Singleton.NetworkConfig.NetworkTransport = chosenTransport;
+
+            ChannelInfo = "Unity Relay";
 
             switch (chosenTransport)
             {

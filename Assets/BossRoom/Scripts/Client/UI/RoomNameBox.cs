@@ -81,6 +81,7 @@ public class RoomNameBox : MonoBehaviour
         m_RoomNameText.text = $"Room Name: {m_RoomName}";
         m_ConnectionFinished = true;
         m_CopyToClipboardButton.gameObject.SetActive(true);
+        GameNetPortal.Instance.ChannelInfo = roomName;
     }
 
     public void CopyToClipboard()
