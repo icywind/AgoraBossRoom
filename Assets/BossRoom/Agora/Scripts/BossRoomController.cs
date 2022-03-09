@@ -1,7 +1,7 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 using agora_gaming_rtc;
-using agora_utilities;
 
 namespace agora_game_control
 {
@@ -14,6 +14,8 @@ namespace agora_game_control
         GameObject VideoViewPrefab;
 
         VideoSurface HeroVideoView { get; set; }
+
+        Dictionary<uint, GameObject> UserViews = new Dictionary<uint, GameObject>();
 
         private void OnEnable()
         {
@@ -38,16 +40,14 @@ namespace agora_game_control
 
         private void OnDisable()
         {
-            mRtcEngine.DisableVideoObserver();
-            mRtcEngine.DisableVideo();
-            mRtcEngine.LeaveChannel();
-            UnsetHandlers();
+            EndSession();
         }
 
         private void SetUpHandlers()
         {
             // set callbacks
             mRtcEngine.OnJoinChannelSuccess += onJoinChannelSuccess;
+            mRtcEngine.OnLeaveChannel += OnLeaveChannelHandler;
             mRtcEngine.OnUserJoined += onUserJoined;
             mRtcEngine.OnUserOffline += onUserOffline;
             mRtcEngine.OnWarning += HandlerWarnings;
@@ -63,22 +63,46 @@ namespace agora_game_control
             mRtcEngine.OnError -= HandleError;
         }
 
+        public void EndSession()
+        {
+            if (mRtcEngine != null)
+            {
+                mRtcEngine.DisableVideoObserver();
+                mRtcEngine.DisableVideo();
+                mRtcEngine.LeaveChannel();
+                UnsetHandlers();
+                mRtcEngine = null;
+            }
+        }
+
+        private void CleanupViews()
+        {
+            foreach (var uid in UserViews.Keys)
+            {
+                Destroy(UserViews[uid]);
+            }
+            UserViews.Clear();
+        }
 
         // implement engine callbacks
         private void onJoinChannelSuccess(string channelName, uint uid, int elapsed)
         {
             Debug.Log("JoinChannelSuccessHandler: uid = " + uid);
             GameObject go = GameObject.Find("Hero HUD");
-            HeroVideoView = makeImageSurface("MyView", go.transform, VideoViewPrefab);
-            // HeroVideoView = MakeImageSurface("MyView");
-            HeroVideoView.SetForUser(0);
-            HeroVideoView.SetEnable(true);
+            GameObject view = MakeImageSurface(0, go.transform, VideoViewPrefab);
+            UserViews[0] = view;
 
-            var holder = HeroVideoView.transform.parent;
-            RectTransform rt = holder.GetComponent<RectTransform>();
+            RectTransform rt = view.GetComponent<RectTransform>();
             rt.anchorMin = go.transform.GetComponent<RectTransform>().anchorMin;
             rt.anchorMax = go.transform.GetComponent<RectTransform>().anchorMax;
-            holder.localPosition = new Vector3(-60, -90, 0);
+            view.transform.localPosition = new Vector3(-60, -90, 0);
+        }
+
+        private void OnLeaveChannelHandler(RtcStats stats)
+        {
+            Debug.Log("Leaving Channel and cleaning up views");
+            CleanupViews();
+            this.enabled = false;
         }
 
         // When a remote user joined, this delegate will be called. Typically
@@ -90,25 +114,18 @@ namespace agora_game_control
 
             // find a game object to render video stream from 'uid'
             GameObject go = GameObject.Find(uid.ToString());
-            if (!ReferenceEquals(go, null))
+            if (go != null)
             {
                 return; // reuse
             }
 
             // create a GameObject and assign to this new user
-            VideoSurface videoSurface = makeImageSurface(uid.ToString(), RemoteUserSpawnParent, VideoViewPrefab);
-            if (!ReferenceEquals(videoSurface, null))
-            {
-                // configure videoSurface
-                videoSurface.SetForUser(uid);
-                videoSurface.SetEnable(true);
-                videoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.RawImage);
-            }
-            videoSurface.transform.localScale = new Vector3(1, -1, 1);
+            go = MakeImageSurface(uid, RemoteUserSpawnParent, VideoViewPrefab);
+            UserViews[uid] = go;
         }
 
 
-        public VideoSurface makeImageSurface(string goName, Transform parentTrans, GameObject prefab)
+        GameObject MakeImageSurface(uint uid, Transform parentTrans, GameObject prefab)
         {
             GameObject go = Instantiate(prefab);
 
@@ -117,7 +134,7 @@ namespace agora_game_control
                 return null;
             }
 
-            go.name = goName;
+            go.name = uid == 0 ? "LocalView" : uid.ToString();
             go.transform.SetParent(parentTrans);
 
             // set up transform
@@ -128,8 +145,16 @@ namespace agora_game_control
             ViewTarget target = go.GetComponentInChildren<ViewTarget>();
             // ViewTarget contains a reference to the RawImage used for rendering the video
             VideoSurface videoSurface = target.ViewTargetImage.gameObject.AddComponent<VideoSurface>();
+            if (!ReferenceEquals(videoSurface, null))
+            {
+                // configure videoSurface
+                videoSurface.SetForUser(uid);
+                videoSurface.SetEnable(true);
+                videoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.RawImage);
+            }
+            videoSurface.transform.localScale = new Vector3(1, -1, 1);
 
-            return videoSurface;
+            return go;
         }
 
         // When remote user is offline, this delegate will be called. Typically
@@ -138,11 +163,15 @@ namespace agora_game_control
         {
             // remove video stream
             Debug.Log("onUserOffline: uid = " + uid + " reason = " + reason);
-            // this is called in main thread
-            GameObject go = GameObject.Find(uid.ToString());
-            if (!ReferenceEquals(go, null))
+            if (UserViews.ContainsKey(uid))
             {
-                Object.Destroy(go);
+                // this is called in main thread
+                GameObject go = UserViews[uid];
+                if (!ReferenceEquals(go, null))
+                {
+                    Destroy(go);
+                }
+                UserViews.Remove(uid);
             }
         }
 

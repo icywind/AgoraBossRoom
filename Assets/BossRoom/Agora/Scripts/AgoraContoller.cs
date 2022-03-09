@@ -88,7 +88,7 @@ namespace agora_game_control
                     StopPreview();
                     break;
                 case "BossRoom":
-                    _BossRoomController.enabled = false;
+                    _BossRoomController.EndSession();
                     break;
                 case "PostGame":
                     break;
