@@ -3,7 +3,8 @@ using UnityEngine.UI;
 using agora_gaming_rtc;
 using agora_utilities;
 
-namespace agora_game_control {
+namespace agora_game_control
+{
     public class BossRoomController : MonoBehaviour
     {
         IRtcEngine mRtcEngine;
@@ -124,7 +125,10 @@ namespace agora_game_control {
             go.transform.localScale = Vector3.one;
 
             // configure videoSurface
-            VideoSurface videoSurface = go.GetComponentInChildren<VideoSurface>();
+            ViewTarget target = go.GetComponentInChildren<ViewTarget>();
+            // ViewTarget contains a reference to the RawImage used for rendering the video
+            VideoSurface videoSurface = target.ViewTargetImage.gameObject.AddComponent<VideoSurface>();
+
             return videoSurface;
         }
 

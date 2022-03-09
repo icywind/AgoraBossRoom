@@ -2,7 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using agora_gaming_rtc;
-namespace agora_game_control {
+namespace agora_game_control
+{
     public class AgoraContoller : MonoBehaviour
     {
         // PLEASE KEEP THIS App ID IN SAFE PLACE
@@ -46,8 +47,8 @@ namespace agora_game_control {
 
         void Update()
         {
-            PermissionHelper.RequestCameraPermission();
-            PermissionHelper.RequestMicrophontPermission();
+            //PermissionHelper.RequestCameraPermission();
+            //PermissionHelper.RequestMicrophontPermission();
         }
 
         private bool CheckAppId()
@@ -136,6 +137,13 @@ namespace agora_game_control {
         bool _isPreviewing = false;
         void ShowPreview()
         {
+            GameObject go = GameObject.Find("SelfVideoView");
+            if (go != null)
+            {
+                // configure videoSurface
+                ViewTarget target = go.GetComponentInChildren<ViewTarget>();
+                target.ViewTargetImage.gameObject.AddComponent<VideoSurface>();
+            }
             mRtcEngine.EnableVideo();
             mRtcEngine.EnableVideoObserver();
             mRtcEngine.StartPreview();

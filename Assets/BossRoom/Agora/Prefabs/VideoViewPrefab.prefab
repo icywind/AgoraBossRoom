@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 3365064907315411722}
   - component: {fileID: 3365064907315411717}
   - component: {fileID: 3365064907315411716}
-  - component: {fileID: 3365064907315411723}
   m_Layer: 5
   m_Name: RawImage
   m_TagString: Untagged
@@ -73,23 +72,6 @@ MonoBehaviour:
     y: 0
     width: 1
     height: 1
---- !u!114 &3365064907315411723
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3365064907315411721}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 57ffd66dcbc244163a155e5e870f38f2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  isMultiChannelWant: 0
-  _enableFlipHorizontal: 0
-  _enableFlipVertical: 0
-  videoFps: 30
-  VideoSurfaceType: 0
 --- !u!1 &3365064907387852979
 GameObject:
   m_ObjectHideFlags: 0
@@ -102,6 +84,7 @@ GameObject:
   - component: {fileID: 3365064907387852975}
   - component: {fileID: 3365064907387852974}
   - component: {fileID: 3365064907387852973}
+  - component: {fileID: 3560143534346098254}
   m_Layer: 5
   m_Name: VideoViewPrefab
   m_TagString: Untagged
@@ -177,3 +160,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 1
+--- !u!114 &3560143534346098254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3365064907387852979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 646ca31eee3684149accbcc6606ab536, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ViewTargetImage: {fileID: 3365064907315411716}
