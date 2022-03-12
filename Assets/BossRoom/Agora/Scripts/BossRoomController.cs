@@ -1,7 +1,11 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Multiplayer.Samples.BossRoom;
+using Unity.Netcode;
+using Newtonsoft.Json;
+
 using agora_gaming_rtc;
+using agora_game_model;
 
 namespace agora_game_control
 {
@@ -13,9 +17,14 @@ namespace agora_game_control
         [SerializeField]
         GameObject VideoViewPrefab;
 
-        VideoSurface HeroVideoView { get; set; }
-
         Dictionary<uint, GameObject> UserViews = new Dictionary<uint, GameObject>();
+        Dictionary<ulong, uint> ClientUIDMap = new Dictionary<ulong, uint>();
+        Dictionary<uint, UserInfoModel> UserInfoDict = new Dictionary<uint, UserInfoModel>();
+
+        public uint AgoraUID { get; private set; }
+
+        public bool IsHost => GameNetPortal.Instance.NetManager.IsHost;
+        public bool IsServer => GameNetPortal.Instance.NetManager.IsServer;
 
         private void OnEnable()
         {
@@ -35,7 +44,12 @@ namespace agora_game_control
 
             mRtcEngine.EnableVideo();
             mRtcEngine.EnableVideoObserver();
-            mRtcEngine.JoinChannel("unity3d");
+
+            var portalName = GameNetPortal.Instance.ChannelInfo;
+            string playerName = GameNetPortal.Instance.PlayerName;
+
+            Debug.Log("Joining channel, portalName is " + portalName + $" playerName:{playerName}  IsHost:{IsHost} ");
+            mRtcEngine.JoinChannel("unity3d"); // TODO: Use the portal room name
         }
 
         private void OnDisable()
@@ -52,6 +66,9 @@ namespace agora_game_control
             mRtcEngine.OnUserOffline += onUserOffline;
             mRtcEngine.OnWarning += HandlerWarnings;
             mRtcEngine.OnError += HandleError;
+            mRtcEngine.OnStreamMessage += OnStreamMessageHandler;
+
+            mRtcEngine.MuteLocalAudioStream(true);
         }
 
         private void UnsetHandlers()
@@ -61,6 +78,7 @@ namespace agora_game_control
             mRtcEngine.OnUserOffline -= onUserOffline;
             mRtcEngine.OnWarning -= HandlerWarnings;
             mRtcEngine.OnError -= HandleError;
+            mRtcEngine.OnStreamMessage -= OnStreamMessageHandler;
         }
 
         public void EndSession()
@@ -87,6 +105,7 @@ namespace agora_game_control
         // implement engine callbacks
         private void onJoinChannelSuccess(string channelName, uint uid, int elapsed)
         {
+            AgoraUID = uid;
             Debug.Log("JoinChannelSuccessHandler: uid = " + uid);
             GameObject go = GameObject.Find("Hero HUD");
             GameObject view = MakeImageSurface(0, go.transform, VideoViewPrefab);
@@ -96,6 +115,7 @@ namespace agora_game_control
             rt.anchorMin = go.transform.GetComponent<RectTransform>().anchorMin;
             rt.anchorMax = go.transform.GetComponent<RectTransform>().anchorMax;
             view.transform.localPosition = new Vector3(-60, -90, 0);
+
         }
 
         private void OnLeaveChannelHandler(RtcStats stats)
@@ -111,6 +131,8 @@ namespace agora_game_control
         {
             Debug.Log("onUserJoined: uid = " + uid + " elapsed = " + elapsed);
             // this is called in main thread
+            // Send data at this poin since everyone has set up the callback
+            SendMyInfoData();
 
             // find a game object to render video stream from 'uid'
             GameObject go = GameObject.Find(uid.ToString());
@@ -124,6 +146,31 @@ namespace agora_game_control
             UserViews[uid] = go;
         }
 
+        void OnStreamMessageHandler(uint userId, int streamId, byte[] buffer, int length)
+        {
+            string json = System.Text.Encoding.UTF8.GetString(buffer, 0, length);
+            Debug.Log("Receive JSON:" + json);
+
+            try
+            {
+                UserInfoModel userInfo = JsonUtility.FromJson<UserInfoModel>(json);
+                Debug.Log("Received user info:" + userInfo.ToString());
+                ClientUIDMap[userInfo.ClientID] = userInfo.UID;
+                UserInfoDict[userInfo.UID] = userInfo;
+            }
+            catch
+            {
+                Debug.LogError("Invalid json:" + json);
+            }
+        }
+
+        void SendMyInfoData()
+        {
+            var clientId = NetworkManager.Singleton.LocalClientId;
+            string playerName = GameNetPortal.Instance.PlayerName;
+
+            SendUserInfo(AgoraUID, clientId, playerName);
+        }
 
         GameObject MakeImageSurface(uint uid, Transform parentTrans, GameObject prefab)
         {
@@ -206,5 +253,13 @@ namespace agora_game_control
         }
         #endregion
 
+        public void SendUserInfo(uint uid, ulong clientId, string name)
+        {
+            UserInfoModel userInfoModel = new UserInfoModel() { ClientID = clientId, UID = uid, Name = name };
+            var json = JsonConvert.SerializeObject(userInfoModel);
+            Debug.Log("Sending JSON:" + json);
+            byte[] data = System.Text.Encoding.UTF8.GetBytes(json);
+            mRtcEngine.SendStreamMessage(AgoraContoller.Instance.DataStreamID, data);
+        }
     }
 }

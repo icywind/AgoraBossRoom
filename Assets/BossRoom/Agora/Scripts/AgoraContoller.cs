@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using agora_gaming_rtc;
+using agora_game_model;
+
 namespace agora_game_control
 {
     public class AgoraContoller : MonoBehaviour
@@ -15,6 +17,7 @@ namespace agora_game_control
         public IRtcEngine mRtcEngine { get; private set; }
 
         public bool IsInitialized { get; private set; }
+        public int DataStreamID { get; private set; }
 
         BossRoomController _BossRoomController { get; set; }
 
@@ -119,6 +122,9 @@ namespace agora_game_control
             mRtcEngine.SetLogFile("agora.log");
             // enable log
             mRtcEngine.SetLogFilter(LOG_FILTER.DEBUG | LOG_FILTER.INFO | LOG_FILTER.WARNING | LOG_FILTER.ERROR | LOG_FILTER.CRITICAL);
+
+            // create a datastream
+            DataStreamID = mRtcEngine.CreateDataStream(true, true);
         }
 
 
