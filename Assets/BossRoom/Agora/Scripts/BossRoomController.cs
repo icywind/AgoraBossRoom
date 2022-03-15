@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Multiplayer.Samples.BossRoom;
@@ -136,20 +137,7 @@ namespace agora_game_control
             UIHUDButton button = view.GetComponent<UIHUDButton>();
             button.OnPointerUpEvent = delegate
             {
-                if (ClientAvatarMap.ContainsKey(0))
-                {
-                    GameObject aObj = ClientAvatarMap[0].gameObject;
-                    VideoSurface video = aObj.GetComponentInChildren<VideoSurface>();
-                    if (video)
-                    {
-                        Destroy(video.gameObject);
-                    }
-                    else
-                    {
-                        AssignUserToAvatar(aObj, 0);
-                    }
-                }
-
+                HandleAvatorButton(clientID: 0);
             };
         }
 
@@ -179,8 +167,53 @@ namespace agora_game_control
             // create a GameObject and assign to this new user
             go = MakeImageSurface(uid, RemoteUserSpawnParent, VideoViewPrefab);
             UserViews[uid] = go;
+
+            StartCoroutine(CoBindUserJoinInvocation(uid, HandleAvatorButton));
         }
 
+        void HandleAvatorButton(ulong clientID)
+        {
+            if (ClientAvatarMap.ContainsKey(clientID))
+            {
+                GameObject aObj = ClientAvatarMap[clientID].gameObject;
+                VideoSurface video = aObj.GetComponentInChildren<VideoSurface>();
+                if (video)
+                {
+                    Destroy(video.gameObject);
+                }
+                else
+                {
+                    AssignUserToAvatar(avatar: aObj, clientId: clientID);
+                }
+            }
+        }
+
+        IEnumerator CoBindUserJoinInvocation(uint uid, System.Action<ulong> action)
+        {
+            yield return new WaitUntil(() => UserInfoDict.ContainsKey(uid));
+            ulong clientID = UserInfoDict[uid].ClientID;
+            UIHUDButton button = UserViews[uid].GetComponent<UIHUDButton>();
+            if (button)
+            {
+                button.OnPointerUpEvent = delegate
+                {
+                    action(clientID);
+                };
+            }
+            else
+            {
+                Debug.LogError($"GameObject: {UserViews[uid].name} does not have UIHUDButton");
+            }
+        }
+
+        /// <summary>
+        ///   handling data stream message from remote users. Messsage is in form
+        /// of JSON string which should map to UserInfoModel
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="streamId"></param>
+        /// <param name="buffer"></param>
+        /// <param name="length"></param>
         void OnStreamMessageHandler(uint userId, int streamId, byte[] buffer, int length)
         {
             string json = System.Text.Encoding.UTF8.GetString(buffer, 0, length);
@@ -188,7 +221,7 @@ namespace agora_game_control
 
             try
             {
-                UserInfoModel userInfo = JsonUtility.FromJson<UserInfoModel>(json);
+                UserInfoModel userInfo = JsonConvert.DeserializeObject<UserInfoModel>(json);
                 Debug.Log("Received user info:" + userInfo.ToString());
                 ClientUIDMap[userInfo.ClientID] = userInfo.UID;
                 UserInfoDict[userInfo.UID] = userInfo;
