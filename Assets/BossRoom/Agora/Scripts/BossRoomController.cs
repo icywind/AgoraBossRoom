@@ -6,6 +6,8 @@ using Newtonsoft.Json;
 
 using agora_gaming_rtc;
 using agora_game_model;
+using Unity.Multiplayer.Samples.BossRoom.Client;
+using Unity.Multiplayer.Samples.BossRoom.Visual;
 
 namespace agora_game_control
 {
@@ -17,9 +19,13 @@ namespace agora_game_control
         [SerializeField]
         GameObject VideoViewPrefab;
 
+        [SerializeField]
+        ClientPlayerAvatarRuntimeCollection m_PlayerAvatars;
+
         Dictionary<uint, GameObject> UserViews = new Dictionary<uint, GameObject>();
         Dictionary<ulong, uint> ClientUIDMap = new Dictionary<ulong, uint>();
         Dictionary<uint, UserInfoModel> UserInfoDict = new Dictionary<uint, UserInfoModel>();
+        Dictionary<ulong, ClientPlayerAvatar> ClientAvatarMap = new Dictionary<ulong, ClientPlayerAvatar>();
 
         public uint AgoraUID { get; private set; }
 
@@ -59,6 +65,8 @@ namespace agora_game_control
 
         private void SetUpHandlers()
         {
+            m_PlayerAvatars.ItemAdded += PlayerAvatarAdded;
+
             // set callbacks
             mRtcEngine.OnJoinChannelSuccess += onJoinChannelSuccess;
             mRtcEngine.OnLeaveChannel += OnLeaveChannelHandler;
@@ -73,6 +81,8 @@ namespace agora_game_control
 
         private void UnsetHandlers()
         {
+            m_PlayerAvatars.ItemAdded -= PlayerAvatarAdded;
+
             mRtcEngine.OnJoinChannelSuccess -= onJoinChannelSuccess;
             mRtcEngine.OnUserJoined -= onUserJoined;
             mRtcEngine.OnUserOffline -= onUserOffline;
@@ -102,6 +112,12 @@ namespace agora_game_control
             UserViews.Clear();
         }
 
+        void PlayerAvatarAdded(ClientPlayerAvatar clientPlayerAvatar)
+        {
+            // AssignUserToAvatar(clientPlayerAvatar.gameObject, clientPlayerAvatar.OwnerClientId);
+            ClientAvatarMap[clientPlayerAvatar.OwnerClientId] = clientPlayerAvatar;
+        }
+
         // implement engine callbacks
         private void onJoinChannelSuccess(string channelName, uint uid, int elapsed)
         {
@@ -110,12 +126,31 @@ namespace agora_game_control
             GameObject go = GameObject.Find("Hero HUD");
             GameObject view = MakeImageSurface(0, go.transform, VideoViewPrefab);
             UserViews[0] = view;
+            ClientUIDMap[0] = 0;
 
             RectTransform rt = view.GetComponent<RectTransform>();
             rt.anchorMin = go.transform.GetComponent<RectTransform>().anchorMin;
             rt.anchorMax = go.transform.GetComponent<RectTransform>().anchorMax;
             view.transform.localPosition = new Vector3(-60, -90, 0);
 
+            UIHUDButton button = view.GetComponent<UIHUDButton>();
+            button.OnPointerUpEvent = delegate
+            {
+                if (ClientAvatarMap.ContainsKey(0))
+                {
+                    GameObject aObj = ClientAvatarMap[0].gameObject;
+                    VideoSurface video = aObj.GetComponentInChildren<VideoSurface>();
+                    if (video)
+                    {
+                        Destroy(video.gameObject);
+                    }
+                    else
+                    {
+                        AssignUserToAvatar(aObj, 0);
+                    }
+                }
+
+            };
         }
 
         private void OnLeaveChannelHandler(RtcStats stats)
@@ -260,6 +295,21 @@ namespace agora_game_control
             Debug.Log("Sending JSON:" + json);
             byte[] data = System.Text.Encoding.UTF8.GetBytes(json);
             mRtcEngine.SendStreamMessage(AgoraContoller.Instance.DataStreamID, data);
+        }
+
+        public void AssignUserToAvatar(GameObject avatar, ulong clientId)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = "Cube_" + clientId;
+            go.transform.SetParent(avatar.transform);
+            // set up transform
+            go.transform.localPosition = new Vector3(0, 3.25f, 0);
+            go.transform.localScale = Vector3.one;
+
+            // configure videoSurface
+            VideoSurface videoSurface = go.AddComponent<VideoSurface>();
+            videoSurface.SetForUser(ClientUIDMap[clientId]);
+            videoSurface.SetEnable(true);
         }
     }
 }
