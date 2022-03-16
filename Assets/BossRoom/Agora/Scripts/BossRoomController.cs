@@ -123,21 +123,23 @@ namespace agora_game_control
         private void onJoinChannelSuccess(string channelName, uint uid, int elapsed)
         {
             AgoraUID = uid;
+            var clientId = NetworkManager.Singleton.LocalClientId;
             Debug.Log("JoinChannelSuccessHandler: uid = " + uid);
             GameObject go = GameObject.Find("Hero HUD");
             GameObject view = MakeImageSurface(0, go.transform, VideoViewPrefab);
             UserViews[0] = view;
-            ClientUIDMap[0] = 0;
+            ClientUIDMap[clientId] = 0;
 
             RectTransform rt = view.GetComponent<RectTransform>();
             rt.anchorMin = go.transform.GetComponent<RectTransform>().anchorMin;
             rt.anchorMax = go.transform.GetComponent<RectTransform>().anchorMax;
             view.transform.localPosition = new Vector3(-60, -90, 0);
+            view.transform.localScale = new Vector3(-view.transform.localScale.x, view.transform.localScale.y, view.transform.localScale.z);
 
             UIHUDButton button = view.GetComponent<UIHUDButton>();
             button.OnPointerUpEvent = delegate
             {
-                HandleAvatorButton(clientID: 0);
+                HandleAvatorButton(clientID: clientId);
             };
         }
 
@@ -337,7 +339,7 @@ namespace agora_game_control
             go.transform.SetParent(avatar.transform);
             // set up transform
             go.transform.localPosition = new Vector3(0, 3.25f, 0);
-            go.transform.localScale = Vector3.one;
+            go.transform.localScale = new Vector3(1, -1, 1);
 
             // configure videoSurface
             VideoSurface videoSurface = go.AddComponent<VideoSurface>();
