@@ -5,6 +5,6 @@ namespace agora_game_control
 {
     public class ViewTarget : MonoBehaviour
     {
-        public RawImage ViewTargetImage;
+        public GameObject ViewTargetImage;
     }
 }

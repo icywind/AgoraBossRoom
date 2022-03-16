@@ -126,7 +126,7 @@ namespace agora_game_control
             var clientId = NetworkManager.Singleton.LocalClientId;
             Debug.Log("JoinChannelSuccessHandler: uid = " + uid);
             GameObject go = GameObject.Find("Hero HUD");
-            GameObject view = MakeImageSurface(0, go.transform, VideoViewPrefab);
+            GameObject view = MakeImageSurface(0, go.transform, VideoViewPrefab, true);
             UserViews[0] = view;
             ClientUIDMap[clientId] = 0;
 
@@ -134,12 +134,12 @@ namespace agora_game_control
             rt.anchorMin = go.transform.GetComponent<RectTransform>().anchorMin;
             rt.anchorMax = go.transform.GetComponent<RectTransform>().anchorMax;
             view.transform.localPosition = new Vector3(-60, -90, 0);
-            view.transform.localScale = new Vector3(-view.transform.localScale.x, view.transform.localScale.y, view.transform.localScale.z);
 
             UIHUDButton button = view.GetComponent<UIHUDButton>();
             button.OnPointerUpEvent = delegate
             {
                 HandleAvatorButton(clientID: clientId);
+                MarkAction(0);
             };
         }
 
@@ -178,15 +178,42 @@ namespace agora_game_control
             if (ClientAvatarMap.ContainsKey(clientID))
             {
                 GameObject aObj = ClientAvatarMap[clientID].gameObject;
-                VideoSurface video = aObj.GetComponentInChildren<VideoSurface>();
-                if (video)
+                ViewTarget view = aObj.GetComponent<ViewTarget>();
+
+                if (view)
                 {
-                    Destroy(video.gameObject);
+                    var targetObj = view.ViewTargetImage;
+                    if (null == targetObj.GetComponent<VideoSurface>())
+                    {
+                        targetObj.SetActive(true);
+                        AssignUserToAvatar(target: targetObj, clientId: clientID);
+                    }
+                    else
+                    {
+                        // is it showing video
+                        if (targetObj.activeInHierarchy)
+                        {
+                            targetObj.SetActive(false);
+                        }
+                        else
+                        {
+                            targetObj.SetActive(true);
+                        }
+                    }
                 }
-                else
-                {
-                    AssignUserToAvatar(avatar: aObj, clientId: clientID);
-                }
+
+                // Target the avatar
+                MarkAction(clientID);
+            }
+        }
+
+        void MarkAction(ulong clientID)
+        {
+            ulong id = ClientAvatarMap[clientID].NetworkObjectId;
+            var senderExist = ClientAvatarMap[clientID].TryGetComponent(out ClientInputSender clientSender);
+            if (senderExist)
+            {
+                clientSender.RequestAction(ActionType.GeneralTarget, ClientInputSender.SkillTriggerStyle.UI, id);
             }
         }
 
@@ -242,7 +269,7 @@ namespace agora_game_control
             SendUserInfo(AgoraUID, clientId, playerName);
         }
 
-        GameObject MakeImageSurface(uint uid, Transform parentTrans, GameObject prefab)
+        GameObject MakeImageSurface(uint uid, Transform parentTrans, GameObject prefab, bool mirror = false)
         {
             GameObject go = Instantiate(prefab);
 
@@ -267,9 +294,8 @@ namespace agora_game_control
                 // configure videoSurface
                 videoSurface.SetForUser(uid);
                 videoSurface.SetEnable(true);
-                videoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.RawImage);
             }
-            videoSurface.transform.localScale = new Vector3(1, -1, 1);
+            videoSurface.transform.localScale = new Vector3(mirror ? -1 : 1, -1, 1);
 
             return go;
         }
@@ -332,19 +358,17 @@ namespace agora_game_control
             mRtcEngine.SendStreamMessage(AgoraContoller.Instance.DataStreamID, data);
         }
 
-        public void AssignUserToAvatar(GameObject avatar, ulong clientId)
+        public void AssignUserToAvatar(GameObject target, ulong clientId)
         {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = "Cube_" + clientId;
-            go.transform.SetParent(avatar.transform);
-            // set up transform
-            go.transform.localPosition = new Vector3(0, 3.25f, 0);
-            go.transform.localScale = new Vector3(1, -1, 1);
-
             // configure videoSurface
-            VideoSurface videoSurface = go.AddComponent<VideoSurface>();
-            videoSurface.SetForUser(ClientUIDMap[clientId]);
-            videoSurface.SetEnable(true);
+            // ViewTarget contains a reference to the RawImage used for rendering the video
+            VideoSurface videoSurface = target.AddComponent<VideoSurface>();
+            if (!ReferenceEquals(videoSurface, null))
+            {
+                //// configure videoSurface
+                videoSurface.SetForUser(ClientUIDMap[clientId]);
+                videoSurface.SetEnable(true);
+            }
         }
     }
 }
