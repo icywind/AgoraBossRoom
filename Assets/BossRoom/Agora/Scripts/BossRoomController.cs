@@ -225,11 +225,14 @@ namespace agora_game_control
 
         void MarkAction(ulong clientID)
         {
-            ulong id = ClientAvatarMap[clientID].NetworkObjectId;
-            var senderExist = ClientAvatarMap[clientID].TryGetComponent(out ClientInputSender clientSender);
-            if (senderExist)
+            if (ClientAvatarMap.ContainsKey(clientID))
             {
-                clientSender.RequestAction(ActionType.GeneralTarget, ClientInputSender.SkillTriggerStyle.UI, id);
+                ulong id = ClientAvatarMap[clientID].NetworkObjectId;
+                var senderExist = ClientAvatarMap[clientID].TryGetComponent(out ClientInputSender clientSender);
+                if (senderExist)
+                {
+                    clientSender.RequestAction(ActionType.GeneralTarget, ClientInputSender.SkillTriggerStyle.UI, id);
+                }
             }
         }
 
@@ -340,10 +343,13 @@ namespace agora_game_control
 
         void ToggleVideoSurface(uint uid, bool onOff)
         {
-            var go = UserViews[uid];
-            var target = go.GetComponentInChildren<ViewTarget>();
-            var video = target.ViewTargetImage.GetComponent<VideoSurface>();
-            video.SetEnable(onOff);
+            if (UserViews.ContainsKey(uid))
+            {
+                var go = UserViews[uid];
+                var target = go.GetComponentInChildren<ViewTarget>();
+                var video = target.ViewTargetImage.GetComponent<VideoSurface>();
+                video.SetEnable(onOff);
+            }
         }
 
         GameObject MakeImageSurface(uint uid, Transform parentTrans, GameObject prefab, bool mirror = false)
