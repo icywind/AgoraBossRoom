@@ -56,7 +56,9 @@ namespace agora_game_control
             string playerName = GameNetPortal.Instance.PlayerName;
 
             Debug.Log("Joining channel, portalName is " + portalName + $" playerName:{playerName}  IsHost:{IsHost} ");
-            mRtcEngine.JoinChannel("unity3d"); // TODO: Use the portal room name
+
+            var chanOptions = AgoraAVOptionController.GetAVOptions();
+            mRtcEngine.JoinChannel("", "unity4d", "", 0, chanOptions);// TODO: Use the portal room name
         }
 
         private void OnDisable()
@@ -76,6 +78,11 @@ namespace agora_game_control
             mRtcEngine.OnWarning += HandlerWarnings;
             mRtcEngine.OnError += HandleError;
             mRtcEngine.OnStreamMessage += OnStreamMessageHandler;
+
+            mRtcEngine.OnAudioPublishStateChanged += OnAudioPublishStateChangedHandler;
+            mRtcEngine.OnAudioSubscribeStateChanged += OnAudioSubscribeStateChangedHandler;
+            mRtcEngine.OnVideoPublishStateChanged += OnVideoPublishStateChangedHandler;
+            mRtcEngine.OnVideoSubscribeStateChanged += OnVideoSubscribeStateChangedHandler;
 
             mRtcEngine.MuteLocalAudioStream(true);
         }
@@ -259,6 +266,25 @@ namespace agora_game_control
             {
                 Debug.LogError("Invalid json:" + json);
             }
+        }
+
+        void OnVideoPublishStateChangedHandler(string channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState)
+        {
+            Debug.LogWarning("OnVideoPublishStateChanged: " + newState);
+        }
+        void OnAudioPublishStateChangedHandler(string channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState)
+        {
+            Debug.LogWarning("OnAudioPublishStateChanged: " + newState);
+        }
+
+        void OnAudioSubscribeStateChangedHandler(string channel, uint uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState, int elapseSinceLastState)
+        {
+            Debug.LogWarning("OnAudioStateSubChanged: " + newState);
+        }
+
+        void OnVideoSubscribeStateChangedHandler(string channel, uint uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState, int elapseSinceLastState)
+        {
+            Debug.LogWarning("OnVideoStateSubChanged: " + newState);
         }
 
         void SendMyInfoData()
