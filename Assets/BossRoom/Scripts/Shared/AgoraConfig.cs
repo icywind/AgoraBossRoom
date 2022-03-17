@@ -4,6 +4,13 @@ using Newtonsoft.Json;
 
 namespace agora_game_model
 {
+
+    public class AgoraConfigModel
+    {
+        public string Region { get; set; }
+        public string RoomName { get; set; }
+    }
+
     public class AgoraConfig : MonoBehaviour
     {
         static string ConfigFile
@@ -56,10 +63,10 @@ namespace agora_game_model
             string json = JsonConvert.SerializeObject(model);
             try
             {
-
                 StreamWriter writer = new StreamWriter(ConfigFile);
                 writer.Write(json);
                 writer.Flush();
+                AgoraGameConfig = model;
             }
             catch (System.Exception e)
             {

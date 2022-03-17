@@ -41,9 +41,4 @@ namespace agora_game_model
         }
     }
 
-    public class AgoraConfigModel
-    {
-        public string Region { get; set; }
-        public string RoomName { get; set; }
-    }
 }

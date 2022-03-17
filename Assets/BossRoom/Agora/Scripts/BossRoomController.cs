@@ -60,7 +60,7 @@ namespace agora_game_control
             Debug.Log("Joining channel, portalName is " + portalName + $" playerName:{playerName}  IsHost:{IsHost} ");
 
             var chanOptions = AgoraAVOptionController.GetAVOptions();
-            mRtcEngine.JoinChannel("", AgoraContoller.Instance.ROOMNAME, "", 0, chanOptions);// TODO: Use the portal room name
+            mRtcEngine.JoinChannel("", portalName, "", 0, chanOptions);// TODO: Use the portal room name
         }
 
         private void OnDisable()
@@ -282,7 +282,7 @@ namespace agora_game_control
 
         void OnVideoPublishStateChangedHandler(string channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState)
         {
-            Debug.LogWarning("OnVideoPublishStateChanged: " + newState);
+            Debug.Log("OnVideoPublishStateChanged: " + newState);
             if (newState == STREAM_PUBLISH_STATE.PUB_STATE_NO_PUBLISHED)
             {
                 mRtcEngine.EnableLocalVideo(false);
@@ -298,17 +298,17 @@ namespace agora_game_control
 
         void OnAudioPublishStateChangedHandler(string channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState)
         {
-            Debug.LogWarning("OnAudioPublishStateChanged: " + newState);
+            Debug.Log("OnAudioPublishStateChanged: " + newState);
         }
 
         void OnAudioSubscribeStateChangedHandler(string channel, uint uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState, int elapseSinceLastState)
         {
-            Debug.LogWarning("OnAudioStateSubChanged: " + newState);
+            Debug.Log("OnAudioStateSubChanged: " + newState);
         }
 
         void OnVideoSubscribeStateChangedHandler(string channel, uint uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState, int elapseSinceLastState)
         {
-            Debug.LogWarning("OnVideoStateSubChanged: " + newState + " uid:" + uid);
+            Debug.Log("OnVideoStateSubChanged: " + newState + " uid:" + uid);
             if (newState == STREAM_SUBSCRIBE_STATE.SUB_STATE_SUBSCRIBED)
             {
                 ToggleVideoSurface(uid, true);

@@ -11,6 +11,7 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Relay;
 using UnityRegion = Unity.Services.Relay.Models.Region;
+using agora_game_model;
 
 namespace Unity.Multiplayer.Samples.BossRoom.Visual
 {
@@ -198,6 +199,7 @@ namespace Unity.Multiplayer.Samples.BossRoom.Visual
             int.TryParse(m_PortInputField.text, out portNum);
             if (portNum <= 0)
                 portNum = m_DefaultPort;
+            AgoraConfig.WriteModel(new AgoraConfigModel { Region = AgoraConfig.AgoraGameConfig.Region, RoomName = m_InputField.text });
             m_ConfirmFunction.Invoke(m_InputField.text, portNum, m_NameDisplay.GetCurrentName(), OnlineMode);
         }
 
@@ -302,12 +304,12 @@ namespace Unity.Multiplayer.Samples.BossRoom.Visual
                 if (m_EnterAsHost)
                 {
                     // use AgoraController.Instance.ROOMNAME
-                    m_InputField.text = "AGORA";  //  GenerateRandomRoomKey();
+                    m_InputField.text = AgoraConfig.AgoraGameConfig.RoomName;  //  GenerateRandomRoomKey();
                     m_InputField.gameObject.SetActive(true);
                 }
                 else
                 {
-                    m_InputField.text = "USW_AGORA";
+                    m_InputField.text = $"{AgoraConfig.AgoraGameConfig.Region}_{AgoraConfig.AgoraGameConfig.RoomName}";
                 }
 
                 m_PortInputField.gameObject.SetActive(false);
