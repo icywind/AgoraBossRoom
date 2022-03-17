@@ -83,8 +83,6 @@ namespace agora_game_control
             mRtcEngine.OnAudioSubscribeStateChanged += OnAudioSubscribeStateChangedHandler;
             mRtcEngine.OnVideoPublishStateChanged += OnVideoPublishStateChangedHandler;
             mRtcEngine.OnVideoSubscribeStateChanged += OnVideoSubscribeStateChangedHandler;
-
-            mRtcEngine.MuteLocalAudioStream(true);
         }
 
         private void UnsetHandlers()
@@ -271,7 +269,18 @@ namespace agora_game_control
         void OnVideoPublishStateChangedHandler(string channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState)
         {
             Debug.LogWarning("OnVideoPublishStateChanged: " + newState);
+            if (newState == STREAM_PUBLISH_STATE.PUB_STATE_NO_PUBLISHED)
+            {
+                mRtcEngine.DisableVideoObserver();
+                mRtcEngine.DisableVideo();
+            }
+            else if (newState == STREAM_PUBLISH_STATE.PUB_STATE_PUBLISHING)
+            {
+                //mRtcEngine.EnableVideo();
+                //mRtcEngine.EnableVideoObserver();
+            }
         }
+
         void OnAudioPublishStateChangedHandler(string channel, STREAM_PUBLISH_STATE oldState, STREAM_PUBLISH_STATE newState, int elapseSinceLastState)
         {
             Debug.LogWarning("OnAudioPublishStateChanged: " + newState);
@@ -284,7 +293,15 @@ namespace agora_game_control
 
         void OnVideoSubscribeStateChangedHandler(string channel, uint uid, STREAM_SUBSCRIBE_STATE oldState, STREAM_SUBSCRIBE_STATE newState, int elapseSinceLastState)
         {
-            Debug.LogWarning("OnVideoStateSubChanged: " + newState);
+            Debug.LogWarning("OnVideoStateSubChanged: " + newState + " uid:" + uid);
+            if (newState == STREAM_SUBSCRIBE_STATE.SUB_STATE_SUBSCRIBED)
+            {
+                ToggleVideoSurface(uid, true);
+            }
+            else if (newState == STREAM_SUBSCRIBE_STATE.SUB_STATE_NO_SUBSCRIBED)
+            {
+                ToggleVideoSurface(uid, false);
+            }
         }
 
         void SendMyInfoData()
@@ -293,6 +310,14 @@ namespace agora_game_control
             string playerName = GameNetPortal.Instance.PlayerName;
 
             SendUserInfo(AgoraUID, clientId, playerName);
+        }
+
+        void ToggleVideoSurface(uint uid, bool onOff)
+        {
+            var go = UserViews[uid];
+            var target = go.GetComponentInChildren<ViewTarget>();
+            var video = target.ViewTargetImage.GetComponent<VideoSurface>();
+            video.SetEnable(onOff);
         }
 
         GameObject MakeImageSurface(uint uid, Transform parentTrans, GameObject prefab, bool mirror = false)

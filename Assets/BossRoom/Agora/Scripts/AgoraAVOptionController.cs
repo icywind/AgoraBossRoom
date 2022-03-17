@@ -66,6 +66,11 @@ public class AgoraAVOptionController : MonoBehaviour
     void HandlePubVideoToggle(bool isOn)
     {
         IRtcEngine engine = IRtcEngine.QueryEngine();
+        if (isOn)
+        {
+            engine.EnableVideo();
+            engine.EnableVideoObserver();
+        }
         engine?.MuteLocalVideoStream(!isOn);
     }
 
