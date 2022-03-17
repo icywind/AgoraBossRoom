@@ -68,8 +68,7 @@ public class AgoraAVOptionController : MonoBehaviour
         IRtcEngine engine = IRtcEngine.QueryEngine();
         if (isOn)
         {
-            engine.EnableVideo();
-            engine.EnableVideoObserver();
+            engine.EnableLocalVideo(true);
         }
         engine?.MuteLocalVideoStream(!isOn);
     }

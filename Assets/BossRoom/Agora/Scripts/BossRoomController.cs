@@ -1,12 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Unity.Multiplayer.Samples.BossRoom;
 using Unity.Netcode;
 using Newtonsoft.Json;
 
 using agora_gaming_rtc;
 using agora_game_model;
+using agora_utilities;
 using Unity.Multiplayer.Samples.BossRoom.Client;
 using Unity.Multiplayer.Samples.BossRoom.Visual;
 
@@ -83,6 +85,7 @@ namespace agora_game_control
             mRtcEngine.OnAudioSubscribeStateChanged += OnAudioSubscribeStateChangedHandler;
             mRtcEngine.OnVideoPublishStateChanged += OnVideoPublishStateChangedHandler;
             mRtcEngine.OnVideoSubscribeStateChanged += OnVideoSubscribeStateChangedHandler;
+            mRtcEngine.OnVideoSizeChanged += OnVideoSizeChanged;
         }
 
         private void UnsetHandlers()
@@ -95,6 +98,13 @@ namespace agora_game_control
             mRtcEngine.OnWarning -= HandlerWarnings;
             mRtcEngine.OnError -= HandleError;
             mRtcEngine.OnStreamMessage -= OnStreamMessageHandler;
+
+            mRtcEngine.OnAudioPublishStateChanged -= OnAudioPublishStateChangedHandler;
+            mRtcEngine.OnAudioSubscribeStateChanged -= OnAudioSubscribeStateChangedHandler;
+            mRtcEngine.OnVideoPublishStateChanged -= OnVideoPublishStateChangedHandler;
+            mRtcEngine.OnVideoSubscribeStateChanged -= OnVideoSubscribeStateChangedHandler;
+            mRtcEngine.OnVideoSizeChanged -= OnVideoSizeChanged;
+
         }
 
         public void EndSession()
@@ -124,6 +134,7 @@ namespace agora_game_control
             ClientAvatarMap[clientPlayerAvatar.OwnerClientId] = clientPlayerAvatar;
         }
 
+        #region -- Engine Callback Events --
         // implement engine callbacks
         private void onJoinChannelSuccess(string channelName, uint uid, int elapsed)
         {
@@ -271,13 +282,14 @@ namespace agora_game_control
             Debug.LogWarning("OnVideoPublishStateChanged: " + newState);
             if (newState == STREAM_PUBLISH_STATE.PUB_STATE_NO_PUBLISHED)
             {
-                mRtcEngine.DisableVideoObserver();
-                mRtcEngine.DisableVideo();
+                mRtcEngine.EnableLocalVideo(false);
+                ToggleVideoSurface(0, false);
             }
             else if (newState == STREAM_PUBLISH_STATE.PUB_STATE_PUBLISHING)
             {
-                //mRtcEngine.EnableVideo();
-                //mRtcEngine.EnableVideoObserver();
+                // The following is handled by the AgoraAVOptionController
+                // mRtcEngine.EnableLocalVideo(true);
+                ToggleVideoSurface(0, true);
             }
         }
 
@@ -303,6 +315,20 @@ namespace agora_game_control
                 ToggleVideoSurface(uid, false);
             }
         }
+        void OnVideoSizeChanged(uint uid, int width, int height, int rotation)
+        {
+            if (UserViews.ContainsKey(uid))
+            {
+                var go = UserViews[uid];
+                var target = go.GetComponentInChildren<ViewTarget>();
+                var video = target.ViewTargetImage.GetComponent<VideoSurface>();
+
+                RawImage image = video.GetComponent<RawImage>();
+                Vector2 v2 = AgoraUIUtils.GetScaledDimension(width, height, 160f);
+                image.rectTransform.sizeDelta = v2;
+            }
+        }
+        #endregion
 
         void SendMyInfoData()
         {
