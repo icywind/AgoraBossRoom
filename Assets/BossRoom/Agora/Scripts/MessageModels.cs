@@ -40,4 +40,10 @@ namespace agora_game_model
             return base.ToString() + "\n" + $"Name:{Name}\n ClientId:{ClientID}\n UID:{UID}";
         }
     }
+
+    public class AgoraConfigModel
+    {
+        public string Region { get; set; }
+        public string RoomName { get; set; }
+    }
 }
