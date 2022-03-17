@@ -12,6 +12,7 @@ namespace agora_game_control
         // Get your own App ID at https://dashboard.agora.io/
         [SerializeField]
         private string AppID = "your_appid";
+        public string ROOMNAME = "AGORA";
 
         public static AgoraContoller Instance { get; private set; }
         public IRtcEngine mRtcEngine { get; private set; }

@@ -60,7 +60,7 @@ namespace agora_game_control
             Debug.Log("Joining channel, portalName is " + portalName + $" playerName:{playerName}  IsHost:{IsHost} ");
 
             var chanOptions = AgoraAVOptionController.GetAVOptions();
-            mRtcEngine.JoinChannel("", "unity4d", "", 0, chanOptions);// TODO: Use the portal room name
+            mRtcEngine.JoinChannel("", AgoraContoller.Instance.ROOMNAME, "", 0, chanOptions);// TODO: Use the portal room name
         }
 
         private void OnDisable()

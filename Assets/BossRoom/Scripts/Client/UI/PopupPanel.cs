@@ -139,23 +139,27 @@ namespace Unity.Multiplayer.Samples.BossRoom.Visual
 
             m_IPRadioButton.gameObject.SetActive(true);
             m_RelayRadioButton.gameObject.SetActive(true);
+            m_UnityRelayRadioButton.gameObject.SetActive(true);
+
             m_IPRadioButton.onValueChanged.AddListener(IPRadioRadioButtonPressed);
             m_RelayRadioButton.onValueChanged.AddListener(RelayRadioRadioButtonPressed);
-            m_RelayRadioButton.isOn = false;
-            m_UnityRelayRadioButton.gameObject.SetActive(true);
             m_UnityRelayRadioButton.onValueChanged.AddListener(UnityRelayRadioRadioButtonPressed);
+
+            m_IPRadioButton.isOn = false;
+            m_RelayRadioButton.isOn = true;
             m_UnityRelayRadioButton.isOn = false;
-            m_IPRadioButton.isOn = true;
 
             m_CancelButton.onClick.AddListener(OnCancelClick);
             m_CancelButton.gameObject.SetActive(true);
 
             m_InputField.gameObject.SetActive(true);
-            m_PortInputField.gameObject.SetActive(true);
+            m_PortInputField.gameObject.SetActive(false);
 
             m_NameDisplay.gameObject.SetActive(true);
 
             gameObject.SetActive(true);
+
+            OnlineMode = OnlineMode.Relay;
         }
 
         void IPRadioRadioButtonPressed(bool value)
@@ -297,12 +301,13 @@ namespace Unity.Multiplayer.Samples.BossRoom.Visual
 
                 if (m_EnterAsHost)
                 {
-                    m_InputField.text = GenerateRandomRoomKey();
-                    m_InputField.gameObject.SetActive(false);
+                    // use AgoraController.Instance.ROOMNAME
+                    m_InputField.text = "AGORA";  //  GenerateRandomRoomKey();
+                    m_InputField.gameObject.SetActive(true);
                 }
                 else
                 {
-                    m_InputField.text = "";
+                    m_InputField.text = "USW_AGORA";
                 }
 
                 m_PortInputField.gameObject.SetActive(false);
