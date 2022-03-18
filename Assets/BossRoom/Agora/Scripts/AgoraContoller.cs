@@ -11,7 +11,8 @@ namespace agora_game_control
         // Get your own App ID at https://dashboard.agora.io/
         [SerializeField]
         private string AppID = "your_appid";
-        public string ROOMNAME = "AGORA";
+        [SerializeField]
+        GameObject DebugConsole;
 
         public static AgoraContoller Instance { get; private set; }
         public IRtcEngine mRtcEngine { get; private set; }
@@ -20,6 +21,8 @@ namespace agora_game_control
         public int DataStreamID { get; private set; }
 
         BossRoomController _BossRoomController { get; set; }
+
+        const int DAREA = 100;
 
         void Awake()
         {
@@ -42,6 +45,11 @@ namespace agora_game_control
 
         private void Start()
         {
+            if (DebugConsole)
+            {
+                DebugConsole.SetActive(false);
+            }
+
             if (IsInitialized)
             {
                 LoadEngine(AppID);
@@ -52,6 +60,33 @@ namespace agora_game_control
         {
             PermissionHelper.RequestCameraPermission();
             PermissionHelper.RequestMicrophontPermission();
+
+            if (Input.touchCount == 3)
+            {
+                var touch = Input.GetTouch(2);
+                Debug.Log(touch.position);
+                if (touch.position.x < DAREA && touch.position.y < DAREA)
+                {
+                    DebugConsole.SetActive(!DebugConsole.activeInHierarchy);
+                }
+            }
+        }
+
+        void OnGUI()
+        {
+            Event e = Event.current;
+            if (e.isMouse)
+            {
+                if (e.clickCount > 2)
+                {
+                    // Debug.Log("Mouse pos = " + e.mousePosition);
+                    // toggle gameobject when 3x tap at top-left corner
+                    if (e.mousePosition.x < DAREA && e.mousePosition.y < DAREA)
+                    {
+                        DebugConsole.SetActive(!DebugConsole.activeInHierarchy);
+                    }
+                }
+            }
         }
 
         private bool CheckAppId()
