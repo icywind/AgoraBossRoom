@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 using agora_gaming_rtc;
-using agora_game_model;
 
 namespace agora_game_control
 {
@@ -51,8 +50,8 @@ namespace agora_game_control
 
         void Update()
         {
-            //PermissionHelper.RequestCameraPermission();
-            //PermissionHelper.RequestMicrophontPermission();
+            PermissionHelper.RequestCameraPermission();
+            PermissionHelper.RequestMicrophontPermission();
         }
 
         private bool CheckAppId()
