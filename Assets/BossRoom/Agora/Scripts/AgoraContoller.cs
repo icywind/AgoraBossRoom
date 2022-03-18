@@ -120,7 +120,7 @@ namespace agora_game_control
             // init engine
             mRtcEngine = IRtcEngine.GetEngine(appId);
 
-            mRtcEngine.SetLogFile("agora.log");
+            // mRtcEngine.SetLogFile("agora.log");
             // enable log
             mRtcEngine.SetLogFilter(LOG_FILTER.DEBUG | LOG_FILTER.INFO | LOG_FILTER.WARNING | LOG_FILTER.ERROR | LOG_FILTER.CRITICAL);
 
