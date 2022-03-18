@@ -199,7 +199,10 @@ namespace Unity.Multiplayer.Samples.BossRoom.Visual
             int.TryParse(m_PortInputField.text, out portNum);
             if (portNum <= 0)
                 portNum = m_DefaultPort;
-            AgoraConfig.WriteModel(new AgoraConfigModel { Region = AgoraConfig.AgoraGameConfig.Region, RoomName = m_InputField.text });
+            if (m_EnterAsHost)
+            {
+                AgoraConfig.WriteModel(new AgoraConfigModel { Region = AgoraConfig.AgoraGameConfig.Region, RoomName = m_InputField.text });
+            }
             m_ConfirmFunction.Invoke(m_InputField.text, portNum, m_NameDisplay.GetCurrentName(), OnlineMode);
         }
 
