@@ -22,7 +22,7 @@ namespace agora_game_control
 
         BossRoomController _BossRoomController { get; set; }
 
-        const int DAREA = 100;
+        const int DAREA = 40;
 
         void Awake()
         {
@@ -63,10 +63,10 @@ namespace agora_game_control
 
             if (Input.touchCount == 3)
             {
-                var touch = Input.GetTouch(2);
-                Debug.Log(touch.position);
-                if (touch.position.x < DAREA && touch.position.y < DAREA)
+                Touch touch = Input.GetTouch(1);
+                if (touch.phase == TouchPhase.Ended) 
                 {
+                    Debug.Log("touch position = " + touch.position + $"touches:{Input.touchCount} taps:{touch.tapCount} type:{touch.type}");
                     DebugConsole.SetActive(!DebugConsole.activeInHierarchy);
                 }
             }
@@ -77,9 +77,9 @@ namespace agora_game_control
             Event e = Event.current;
             if (e.isMouse)
             {
-                if (e.clickCount > 2)
+                if (e.clickCount > 1)
                 {
-                    // Debug.Log("Mouse pos = " + e.mousePosition);
+                     Debug.Log("Mouse pos = " + e.mousePosition + $" clicks:{e.clickCount}");
                     // toggle gameobject when 3x tap at top-left corner
                     if (e.mousePosition.x < DAREA && e.mousePosition.y < DAREA)
                     {
