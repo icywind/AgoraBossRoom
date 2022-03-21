@@ -41,4 +41,13 @@ namespace agora_game_model
         }
     }
 
+    [Serializable]
+    public class AckInfoModel : CommonSignalModel
+    {
+        public uint UID { get; set; }
+        public AckInfoModel()
+        {
+            Type = "AckInfo";
+        }
+    }
 }

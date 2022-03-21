@@ -30,6 +30,8 @@ namespace agora_game_control
         Dictionary<uint, UserInfoModel> UserInfoDict = new Dictionary<uint, UserInfoModel>();
         Dictionary<ulong, ClientPlayerAvatar> ClientAvatarMap = new Dictionary<ulong, ClientPlayerAvatar>();
 
+        bool AckedMyInfo = false;  // if my info sent has been acknowledged
+
         public uint AgoraUID { get; private set; }
 
         public bool IsHost => GameNetPortal.Instance.NetManager.IsHost;
@@ -173,7 +175,7 @@ namespace agora_game_control
             Debug.Log("onUserJoined: uid = " + uid + " elapsed = " + elapsed);
             // this is called in main thread
             // Send data at this poin since everyone has set up the callback
-            SendMyInfoData();
+            StartCoroutine(SendMyInfoData());
 
             // find a game object to render video stream from 'uid'
             GameObject go = GameObject.Find(uid.ToString());
@@ -269,10 +271,25 @@ namespace agora_game_control
 
             try
             {
-                UserInfoModel userInfo = JsonConvert.DeserializeObject<UserInfoModel>(json);
-                Debug.Log("Received user info:" + userInfo.ToString());
-                ClientUIDMap[userInfo.ClientID] = userInfo.UID;
-                UserInfoDict[userInfo.UID] = userInfo;
+                CommonSignalModel model = JsonConvert.DeserializeObject<CommonSignalModel>(json);
+                if (model.Type == "UserInfo")
+                {
+                    UserInfoModel userInfo = JsonConvert.DeserializeObject<UserInfoModel>(json);
+                    Debug.Log("Received user info:" + userInfo.ToString());
+                    ClientUIDMap[userInfo.ClientID] = userInfo.UID;
+                    UserInfoDict[userInfo.UID] = userInfo;
+                    SendAckInfo(userInfo.UID);
+
+                }
+                else if (model.Type == "AckInfo")
+                {
+                    AckInfoModel ack = JsonConvert.DeserializeObject<AckInfoModel>(json);
+                    Debug.Log("Received user ack:" + ack.ToString());
+                    if (ack.UID == AgoraUID)
+                    {
+                        AckedMyInfo = true;
+                    }
+                }
             }
             catch
             {
@@ -333,12 +350,23 @@ namespace agora_game_control
         }
         #endregion
 
-        void SendMyInfoData()
+        IEnumerator SendMyInfoData()
         {
             var clientId = NetworkManager.Singleton.LocalClientId;
             string playerName = GameNetPortal.Instance.PlayerName;
+            int count = 30;
+            while (!AckedMyInfo && count > 0)
+            {
+                SendUserInfo(AgoraUID, clientId, playerName);
+                yield return new WaitForSeconds(0.5f);
+            }
 
-            SendUserInfo(AgoraUID, clientId, playerName);
+            if (count == 0)
+            {
+                Debug.LogWarning("Recreating data stream...");
+                AgoraContoller.Instance.OpenDataStream();
+                SendUserInfo(AgoraUID, clientId, playerName);
+            }
         }
 
         void ToggleVideoSurface(uint uid, bool onOff)
@@ -435,6 +463,15 @@ namespace agora_game_control
         public void SendUserInfo(uint uid, ulong clientId, string name)
         {
             UserInfoModel userInfoModel = new UserInfoModel() { ClientID = clientId, UID = uid, Name = name };
+            var json = JsonConvert.SerializeObject(userInfoModel);
+            Debug.Log("Sending JSON:" + json);
+            byte[] data = System.Text.Encoding.UTF8.GetBytes(json);
+            mRtcEngine.SendStreamMessage(AgoraContoller.Instance.DataStreamID, data);
+        }
+
+        void SendAckInfo(uint uid)
+        {
+            var userInfoModel = new AckInfoModel() { UID = uid };
             var json = JsonConvert.SerializeObject(userInfoModel);
             Debug.Log("Sending JSON:" + json);
             byte[] data = System.Text.Encoding.UTF8.GetBytes(json);
